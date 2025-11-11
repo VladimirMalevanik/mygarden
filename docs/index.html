@@ -10,24 +10,35 @@
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body class="theme-light">
+<body class="theme-salad">
   <header class="topbar">
     <div class="brand">MyGarden</div>
     <div id="status" class="status">web</div>
   </header>
 
-  <!-- СЦЕНА (сад на весь экран) -->
+  <!-- СЦЕНА -->
   <main id="scene" class="garden-full">
-    <div class="garden-bg"></div>
+    <!-- фон сада — картинка -->
+    <div id="gardenBg" class="garden-bg"></div>
+
     <div class="garden-layer" id="gardenLayer">
-      <img id="sproutImg" class="sprout" src="assets/sprout.png" alt="sprout" onerror="this.replaceWith(document.createTextNode('🌱'))">
-      <img id="grandpa" class="grandpa" src="assets/grandpa_stand.png" alt="садовник" onerror="this.replaceWith(document.createTextNode('👴'))">
-      <!-- Речь -->
-      <div id="bubble" class="bubble hidden"><div id="bubbleText"></div><div class="bubble-tail"></div></div>
+      <!-- росток/цветок (ставим над грядкой) -->
+      <img id="sproutImg" class="sprout" src="assets/sprout.png" alt="sprout"
+           onerror="this.replaceWith(document.createTextNode('🌱'))">
+
+      <!-- дедушка (стоит/меняет позы; в финале фон сменится на sleeping) -->
+      <img id="grandpa" class="grandpa" src="assets/grandpa_stand.png" alt="садовник"
+           onerror="this.replaceWith(document.createTextNode('👴'))">
+
+      <!-- спич-бабл -->
+      <div id="bubble" class="bubble hidden">
+        <div id="bubbleText"></div>
+        <div class="bubble-tail"></div>
+      </div>
       <button id="bubbleNext" class="bubble-next hidden" aria-label="Следующая фраза"></button>
     </div>
 
-    <!-- «Сегодня осталось» (правый верх) -->
+    <!-- «Сегодня осталось» -->
     <aside class="today-widget card" id="todayWidget" aria-live="polite">
       <div class="tw-head">Сегодня осталось</div>
       <div id="twList" class="tw-list"></div>
@@ -44,7 +55,7 @@
     <button class="tab-btn" disabled title="Настройки">⚙️</button>
   </nav>
 
-  <!-- ОНБОРДИНГ (последовательно, блюрит фон) -->
+  <!-- ОНБОРДИНГ: последовательно, с блюром сцены -->
   <div id="onbBackdrop" class="onb-backdrop"></div>
   <div id="onb" class="onb" role="dialog" aria-modal="true">
     <!-- 1 -->
@@ -52,7 +63,7 @@
       <div class="onb-card splash">
         <h1 class="logo">MyGarden</h1>
         <p class="tagline">сделай скуку своим другом</p>
-        <button class="btn sunlight" data-next>Начать</button>
+        <button id="onbStart" class="btn sunlight" data-next>Начать</button>
       </div>
     </section>
     <!-- 2 -->
