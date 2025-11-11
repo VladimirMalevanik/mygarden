@@ -7,39 +7,33 @@
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body class="theme-garden">
+<body class="theme-bright">
   <header class="topbar">
     <div class="brand">MyGarden</div>
-    <div id="status" class="status">tma</div>
+    <div id="status" class="status">web</div>
   </header>
 
-  <main class="garden-layout">
-    <!-- ЛЕВАЯ КОЛОНКА: карточка "Сегодня осталось" -->
-    <aside class="left-pane card">
-      <div class="left-header">Сегодня осталось</div>
-      <div id="todayList" class="todo-list"></div>
+  <!-- ПОЛНОЭКРАННЫЙ САД -->
+  <main class="garden-full">
+    <div class="garden-bg"></div>
+    <div class="garden-layer">
+      <!-- росток -->
+      <img id="sproutImg" class="sprout" src="assets/sprout.png" alt="sprout"
+           onerror="this.replaceWith(document.createTextNode('🌱'))">
+      <!-- дедушка -->
+      <img id="grandpa" class="grandpa" src="assets/grandpa.png" alt="садовник"
+           onerror="this.replaceWith(document.createTextNode('👴'))">
+    </div>
 
-      <!-- LARGE PLUS (если задач нет) -->
-      <button id="bigPlus" class="big-plus" title="Добавить задачу">+</button>
-    </aside>
-
-    <!-- ЦЕНТР: сам сад -->
-    <section class="garden card">
-      <div class="garden-canvas">
-        <!-- грядка -->
-        <img id="sproutImg" class="sprout" src="assets/sprout.png" alt="sprout" onerror="this.replaceWith(document.createTextNode('🌱'))">
-        <!-- дедушка -->
-        <img id="grandpa" class="grandpa" src="assets/grandpa.png" alt="садовник" onerror="this.replaceWith(document.createTextNode('👴'))">
-      </div>
-    </section>
-
-    <!-- ПРАВАЯ ПУСТАЯ КОЛОНКА (для будущих виджетов) -->
-    <aside class="right-pane card">
-      <div class="muted">Здесь позже появятся бустеры и декор.</div>
+    <!-- Плавающий ВИДЖЕТ «Сегодня осталось» (в правом верхнем углу) -->
+    <aside class="today-widget card" id="todayWidget">
+      <div class="tw-head">Сегодня осталось</div>
+      <div id="twList" class="tw-list"></div>
+      <button id="twBigPlus" class="tw-big-plus" title="Добавить задачу">+</button>
     </aside>
   </main>
 
-  <!-- НИЖНЯЯ ПАНЕЛЬ: 5 вкладок -->
+  <!-- НИЖНЯЯ ПАНЕЛЬ (5 вкладок), активна только 3-я -->
   <nav class="tabbar">
     <button class="tab-btn" disabled title="Дом">🏠</button>
     <button class="tab-btn" disabled title="Задачи">📝</button>
@@ -47,6 +41,48 @@
     <button class="tab-btn" disabled title="Лист">🍃</button>
     <button class="tab-btn" disabled title="Настройки">⚙️</button>
   </nav>
+
+  <!-- ОНБОРДИНГ (слайды 1–4) -->
+  <div id="onbBackdrop" class="onb-backdrop hidden"></div>
+  <div id="onb" class="onb hidden" role="dialog" aria-modal="true">
+    <!-- СЛАЙД 1: Заставка -->
+    <section class="onb-slide" data-step="1">
+      <div class="onb-card splash">
+        <h1 class="logo">MyGarden</h1>
+        <p class="tagline">сделай скуку своим другом</p>
+        <button class="btn gold" data-next>Начать</button>
+      </div>
+    </section>
+    <!-- СЛАЙД 2: Цель жизни -->
+    <section class="onb-slide" data-step="2">
+      <div class="onb-card">
+        <h2>Цель вашей жизни</h2>
+        <label class="field">
+          <input id="lifeGoal" placeholder="напишите первое, что пришло вам в голову"/>
+        </label>
+        <button class="btn gold" data-next>ОК</button>
+      </div>
+    </section>
+    <!-- СЛАЙД 3: Три цели на год -->
+    <section class="onb-slide" data-step="3">
+      <div class="onb-card">
+        <h2>Чего бы вы хотели достичь за этот год</h2>
+        <label class="field"><input id="y1" placeholder="1." /></label>
+        <label class="field"><input id="y2" placeholder="2." /></label>
+        <label class="field"><input id="y3" placeholder="3." /></label>
+        <button class="btn gold" data-next>ОК</button>
+      </div>
+    </section>
+    <!-- СЛАЙД 4: Подарок -->
+    <section class="onb-slide" data-step="4">
+      <div class="onb-card congrats">
+        <h2>Поздравляем!</h2>
+        <p>Вы сделали первый шаг на пути к достижению — начать. Вы заслужили подарок!</p>
+        <div class="gift">🎁</div>
+        <button class="btn gold" id="onbFinish">Продолжить</button>
+      </div>
+    </section>
+  </div>
 
   <!-- МОДАЛКА СОЗДАНИЯ ЗАДАЧИ -->
   <div id="modalBackdrop" class="backdrop hidden"></div>
@@ -58,7 +94,7 @@
     <div class="modal-body">
       <label class="field">
         <span>Что бы вы хотели сделать?</span>
-        <input id="f_title" placeholder="Например: выучить 20 слов по нем."/>
+        <input id="f_title" placeholder="Например: выучить 20 слов"/>
       </label>
 
       <div class="row">

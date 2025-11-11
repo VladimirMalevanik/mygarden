@@ -1,130 +1,86 @@
-/* ——— БАЗА ——— */
+/* ——— ЯРКАЯ ЗЕЛЁНАЯ ТЕМА ——— */
 :root{
-  --bg:#0a0f0b;        /* тёмно-зелёный фон */
-  --panel:#0f1510;
-  --card:#111a14;
-  --fg:#e9f3ea;        /* почти белый */
-  --muted:#a6b7a9;
-  --gold:#d9b35f;      /* «золотые» акценты */
-  --accent:#22c55e;    /* зелёный акцент */
-  --border:#1b2a1f;
-  --blur: 12px;
+  --bg:#07140a;
+  --fg:#f0fff2;
+  --muted:#bfe6c7;
+  --gold:#f3d27a;
+  --accent:#35d073;
+  --accent-2:#2ecb9d;
+  --panel:#0d2d15;
+  --card:#0f3319;
+  --border:#1b4d29;
+  --shadow:0 20px 60px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
-body{
-  margin:0;background:var(--bg);color:var(--fg);
-  font:16px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Roboto, Arial, sans-serif;
-}
+body{margin:0;background:radial-gradient(120% 120% at 50% 0%,#10381e 0%,#07140a 65%);color:var(--fg);
+  font:16px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Roboto, Arial, sans-serif}
 
 /* ——— Шапка ——— */
-.topbar{
-  position:sticky;top:0;z-index:50;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 16px;background:linear-gradient(180deg,#0e140f,transparent);
-  border-bottom:1px solid var(--border);
-}
-.brand{font-weight:700;letter-spacing:.3px;color:var(--gold)}
+.topbar{position:sticky;top:0;z-index:50;display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;background:rgba(10,40,20,.6);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.brand{font-weight:800;letter-spacing:.4px;color:var(--gold)}
 .status{font-size:12px;color:var(--muted)}
 
-/* ——— Карточки и сетка ——— */
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;padding:14px;
-  box-shadow:0 10px 30px rgba(0,0,0,.25) inset;
-}
-.muted{color:var(--muted)} .small{font-size:12px}
+/* ——— Сад (полноэкранный) ——— */
+.garden-full{position:relative;min-height:calc(100vh - 110px);overflow:hidden}
+.garden-bg{position:absolute;inset:0;background:
+  radial-gradient(70% 45% at 50% 20%, rgba(55,220,120,.28), transparent 60%),
+  radial-gradient(60% 40% at 10% 90%, rgba(46,203,157,.2), transparent 60%),
+  radial-gradient(60% 40% at 90% 90%, rgba(55,220,120,.18), transparent 60%)}
+.garden-layer{position:relative;inset:0;height:100%}
+.sprout{position:absolute;left:50%;transform:translateX(-50%);bottom:70px;width:140px;filter:drop-shadow(0 10px 28px rgba(0,0,0,.55))}
+.grandpa{position:absolute;right:40px;bottom:32px;width:200px;cursor:pointer;filter:drop-shadow(0 12px 28px rgba(0,0,0,.5))}
 
-/* ——— Лэйаут «сад» ——— */
-.garden-layout{
-  display:grid; gap:16px; padding:16px; max-width:1200px; margin:0 auto;
-  grid-template-columns: 300px 1fr 280px;
-  min-height: calc(100vh - 120px);
-}
-.left-pane .left-header{
-  color:var(--gold); font-weight:700; margin-bottom:8px;
-}
+/* ——— Виджет «Сегодня осталось» (правый верх) ——— */
+.card{background:rgba(12,48,24,.8);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
+.today-widget{position:absolute;right:20px;top:20px;width:min(360px,40vw);padding:12px}
+.tw-head{color:var(--gold);font-weight:800;margin:2px 0 8px}
+.tw-list{display:flex;flex-direction:column;gap:8px}
+.tw-item{display:flex;justify-content:space-between;align-items:center;
+  background:rgba(16,64,32,.8);border:1px solid var(--border);border-radius:12px;padding:10px}
+.tw-title{font-weight:700}
+.tw-meta{font-size:12px;color:var(--muted)}
+.tw-chip{font-size:12px;padding:4px 8px;border-radius:8px;background:#165a33;border:1px solid #1a6d3e;cursor:pointer}
+.tw-big-plus{display:none;margin-top:8px;width:100%;aspect-ratio:3/1.2;border-radius:14px;border:2px dashed var(--gold);
+  color:var(--gold);font-weight:900;font-size:44px;background:transparent;cursor:pointer}
 
-/* ——— Список задач (первые 3) ——— */
-.todo-list{display:flex;flex-direction:column;gap:8px}
-.todo-item{
-  background:#131e17;border:1px solid var(--border);
-  border-radius:12px;padding:10px;display:flex;justify-content:space-between;align-items:center;
-}
-.todo-item .title{font-weight:600}
-.todo-item .meta{font-size:12px;color:var(--muted)}
-.todo-actions .chip{font-size:12px;padding:4px 8px;border-radius:8px;background:#17241b;border:1px solid var(--border)}
-.big-plus{
-  margin-top:8px;width:100%;aspect-ratio:3/1.2;border-radius:12px;border:2px dashed var(--gold);
-  color:var(--gold);font-weight:800;font-size:42px;cursor:pointer;background:transparent;display:none;
-}
+/* ——— Таббар ——— */
+.tabbar{position:sticky;bottom:0;z-index:40;display:flex;justify-content:space-around;gap:10px;
+  padding:10px 12px;background:rgba(7,20,10,.7);backdrop-filter:blur(8px);border-top:1px solid var(--border)}
+.tab-btn{width:56px;height:40px;border-radius:14px;border:1px solid var(--border);background:#114424;color:#e9ffef;font-size:21px;cursor:not-allowed}
+.tab-btn.active{background:linear-gradient(180deg,#2fe07a,#1acb57);color:#043013;border:0;cursor:default}
 
-/* ——— Сад (центр) ——— */
-.garden{position:relative;overflow:hidden}
-.garden-canvas{
-  position:relative; height:480px; border-radius:12px;
-  background: radial-gradient(120% 90% at 50% 100%, #182217 0%, #0c120d 60%);
-}
-.sprout{
-  position:absolute; left:50%; transform:translateX(-50%);
-  bottom:60px; width:120px; filter: drop-shadow(0 10px 18px rgba(0,0,0,.5));
-}
-.grandpa{
-  position:absolute; right:40px; bottom:24px; width:180px; cursor:pointer;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,.55));
-}
-
-/* ——— Права колонка ——— */
-.right-pane{display:flex;align-items:center;justify-content:center;min-height:160px}
-
-/* ——— Нижняя таб-панель ——— */
-.tabbar{
-  position:sticky;bottom:0;z-index:40;
-  display:flex;gap:10px;justify-content:space-around;align-items:center;
-  padding:10px 12px;background:rgba(10,15,11,.7);backdrop-filter:blur(var(--blur));
-  border-top:1px solid var(--border);
-}
-.tab-btn{
-  width:54px;height:38px;border-radius:12px;border:1px solid var(--border);
-  background:#122017;color:#dfe9e0;font-size:20px;cursor:not-allowed;
-}
-.tab-btn.active{
-  background:#1b2a1f;color:var(--gold);cursor:default;border-color:#2c3f2f;
-}
-
-/* ——— Кнопки и инпуты ——— */
-.btn{
-  background:#183a25;border:1px solid #21452d;color:#dff0e2;padding:8px 12px;border-radius:10px;cursor:pointer;
-}
-.btn.primary{background:linear-gradient(180deg,#27c862,#209c50);color:#031d0d;border:0;font-weight:700}
-.icon-btn{background:transparent;border:0;color:var(--muted);font-size:18px;cursor:pointer}
-input,select{
-  width:100%;background:#0f1612;color:#e5f2e6;border:1px solid var(--border);
-  padding:8px 10px;border-radius:10px;outline:none;
-}
-.field{display:flex;flex-direction:column;gap:6px}
-
-/* ——— Модалка ——— */
-.backdrop{
-  position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);
-}
-.modal{
-  position:fixed;inset:auto 0 0 0;margin:auto;top:10%;
-  width:min(520px,92vw);background:#0f1510;border:1px solid var(--border);border-radius:16px;
-  box-shadow:0 20px 50px rgba(0,0,0,.5);padding:12px 12px 16px;
-}
-.modal-header{display:flex;justify-content:space-between;align-items:center;padding:6px 2px;color:var(--gold);font-weight:700}
+/* ——— Модалка задачи ——— */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px)}
+.modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);
+  width:min(560px,94vw);background:rgba(12,48,24,.96);border:1px solid var(--border);border-radius:16px;
+  box-shadow:var(--shadow);padding:12px 12px 16px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;color:var(--gold);font-weight:800;margin-bottom:8px}
 .modal-body{display:grid;gap:12px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.icon-btn{background:transparent;border:0;color:var(--muted);font-size:18px;cursor:pointer}
+input,select{width:100%;background:#0e3a21;color:#eaffef;border:1px solid #1a6d3e;padding:9px 10px;border-radius:10px}
+
+/* ——— Кнопки ——— */
+.btn{background:#18623a;border:1px solid #1a6d3e;color:#eaffef;padding:9px 12px;border-radius:12px;cursor:pointer}
+.btn.primary{background:linear-gradient(180deg,#2fe07a,#13b453);color:#052511;border:0;font-weight:800}
+.btn.gold{background:linear-gradient(180deg,#ffd77a,#f3c254);color:#2a1900;border:0;font-weight:800}
+.field{display:flex;flex-direction:column;gap:6px}
+.muted{color:var(--muted)}.small{font-size:12px}
 .hidden{display:none}
 
+/* ——— Онбординг ——— */
+.onb-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:60}
+.onb{position:fixed;inset:0;display:grid;place-items:center;z-index:70}
+.onb-card{width:min(520px,92vw);background:rgba(12,48,24,.96);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:var(--shadow);text-align:center}
+.onb-card.splash{background:linear-gradient(180deg,#0e3a21,#0b2d19)}
+.logo{font-size:44px;margin:0 0 10px;color:#f1e2b0;text-shadow:0 2px 12px rgba(0,0,0,.3)}
+.tagline{color:#e8d7a2;margin:0 0 16px}
+.congrats .gift{font-size:56px;margin:10px 0}
+
 /* ——— Toast ——— */
-.toast{
-  position:fixed;left:50%;transform:translateX(-50%);
-  bottom:86px;background:#132018;color:#eaf5ed;border:1px solid #2a3c2e;border-radius:12px;
-  padding:10px 14px;max-width:92vw;box-shadow:0 10px 30px rgba(0,0,0,.4);
-}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;background:#0f3a20;color:#eaffef;border:1px solid #1a6d3e;border-radius:12px;padding:10px 14px;max-width:92vw;box-shadow:var(--shadow)}
 
 /* ——— Футер ——— */
 .footer{padding:12px;text-align:center;color:var(--muted);font-size:12px}
