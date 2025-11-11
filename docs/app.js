@@ -1,33 +1,36 @@
-// API
+// ===== БАЗА =====
 const q = new URLSearchParams(location.search);
 const API = (q.get("api") || "http://127.0.0.1:8000").replace(/\/+$/,"");
 document.getElementById("apiBase")?.append(document.createTextNode(API));
 
-// helpers
 const $ = id => document.getElementById(id);
 const scene = $("scene");
 const statusEl = $("status");
 const gardenBg = $("gardenBg");
 const toast = $("toast");
 
+// локальные флаги
+const HAS_ONBOARDING = localStorage.getItem("mg_onb_v1") === "1"; // уже прошёл вопросы?
+const HAS_INTRO = localStorage.getItem("mg_intro_v1") === "1";      // дед уже говорил?
+
 let authed = false;
 let templatesMap = new Map();
 
-// дед/реплики
+// ===== ДЕД/РЕПЛИКИ =====
 const bubble = $("bubble"), bubbleText = $("bubbleText"), bubbleNext = $("bubbleNext"), grandpa = $("grandpa");
-const lines = [
+const LINES = [
   "Это Ваше первое растение!",
   "Выполняйте ежедневные задачи, чтобы вырастить его.",
   "Ваша дисциплина создаст красивый сад!",
   "Что-то я устал, пойду вздремну..."
 ];
-const grandpaFrames = [
+const FRAMES = [
   "assets/grandpa_stage1.png",
   "assets/grandpa_stage2.png",
   "assets/grandpa_stage3.png",
   "assets/grandpa_sleep.png"
 ];
-let li = 0;
+let lineIdx = 0;
 
 function setStatus(s){ statusEl.textContent = s; }
 function show(el){ el.classList.remove("hidden"); }
@@ -38,20 +41,31 @@ async function getJSON(url){ const r=await fetch(url); if(!r.ok) throw new Error
 async function postJSON(url, body){ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 async function postForm(url, obj){ const fd=new FormData(); for(const[k,v] of Object.entries(obj)) fd.append(k,v); const r=await fetch(url,{method:"POST",body:fd}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 
-// TMA handshake
+// ===== TMA HANDSHAKE (ПОСЛЕ НЕГО ЗАПУСКАЕМ ДЕДА, ЕСЛИ НУЖНО) =====
 async function handshake(){
   const tg = window.Telegram?.WebApp;
   const initData = tg?.initData || "";
   if (!initData){ setStatus("web"); return; }
-  try{ await postForm(`${API}/api/v1/tma/handshake`, { init_data:initData }); authed=true; setStatus("online"); await warmup(); }
-  catch{ setStatus("tma-error"); }
+  try{
+    await postForm(`${API}/api/v1/tma/handshake`, { init_data:initData });
+    authed = true; setStatus("online");
+    await warmup();
+
+    // интро деда — только если ещё не было
+    if (!HAS_INTRO) runGrandpaIntro();
+  }catch{
+    setStatus("tma-error");
+  }
 }
+
 async function warmup(){ await ensureSeed(); await loadTemplates(); await refreshToday(); }
 async function ensureSeed(){
   try{
     const g = await getJSON(`${API}/api/v1/garden`);
-    if (!g.plants || !g.plants.length){ await postJSON(`${API}/api/v1/garden/plant`, { species_id:1, slot_index:0 }); }
-  }catch{ /* оффлайн/бэк недоступен — игнор */ }
+    if (!g.plants || !g.plants.length){
+      await postJSON(`${API}/api/v1/garden/plant`, { species_id:1, slot_index:0 });
+    }
+  }catch{/* оффлайн — ок */}
 }
 async function loadTemplates(){
   try{
@@ -60,7 +74,7 @@ async function loadTemplates(){
   }catch{}
 }
 
-// Today widget
+// ===== TODAY WIDGET =====
 async function refreshToday(){
   const box = $("twList"), plus = $("twBigPlus");
   box.innerHTML = "";
@@ -77,7 +91,8 @@ async function refreshToday(){
         try{
           await postJSON(`${API}/api/v1/tasks/instances/${it.id}/start`,{});
           const res=await postJSON(`${API}/api/v1/tasks/instances/${it.id}/complete`,{focus_minutes:20});
-          toastMsg(`+XP ${res.xp_awarded} • прогресс ${res.progress_after}`); await refreshToday();
+          toastMsg(`+XP ${res.xp_awarded} • прогресс ${res.progress_after}`);
+          await refreshToday();
         }catch{ toastMsg("Ошибка"); }
       };
       box.appendChild(el);
@@ -85,14 +100,9 @@ async function refreshToday(){
   }catch{ show(plus); }
 }
 
-// modal task
-const backdrop = document.createElement("div"); // создаём тут, чтобы не перекрывал онбординг фокусом
-backdrop.id="modalBackdrop"; backdrop.className="backdrop hidden";
-document.body.appendChild(backdrop);
-
-const modal = $("taskModal");
-$("twBigPlus").onclick=()=>{ show(backdrop); show(modal); };
-$("closeModal").onclick=()=>{ hide(modal); hide(backdrop); };
+// ===== МОДАЛКА ЗАДАЧ =====
+$("twBigPlus").onclick=()=>{ show($("taskModalBackdrop")); show($("taskModal")); };
+$("closeModal").onclick=()=>{ hide($("taskModal")); hide($("taskModalBackdrop")); };
 $("saveTask").onclick=async()=>{
   const title = $("f_title").value.trim(); if(!title){ $("formHint").textContent="Название обязательно"; return; }
   const priority = $("f_priority").value;
@@ -105,23 +115,24 @@ $("saveTask").onclick=async()=>{
   const category = project?`${project}:${priority}`:`inbox:${priority}`;
   try{
     await postJSON(`${API}/api/v1/tasks/templates`, { title, category, difficulty, effort_min_est:effort, mode, repeat_rule:"DAILY", planned_windows });
-    $("formHint").textContent="Создано!"; hide(modal); hide(backdrop); await loadTemplates(); await refreshToday();
+    $("formHint").textContent="Создано!";
+    hide($("taskModal")); hide($("taskModalBackdrop"));
+    await loadTemplates(); await refreshToday();
   }catch{ $("formHint").textContent="Ошибка сохранения"; }
 };
 
-// onboarding (показываем только если нет флага)
+// ===== ОНБОРДИНГ (ТОЛЬКО ПЕРВЫЙ ВИЗИТ) =====
 const onb = $("onb"), onbBackdrop = $("onbBackdrop");
 const slides = onb.querySelectorAll(".onb-slide");
 function setSlide(step){ slides.forEach(s=>s.classList.toggle("current", Number(s.dataset.step)===step)); }
+
 function openOnboarding(){
   scene.classList.add("blurred");
-  onbBackdrop.classList.remove("hidden"); onb.classList.remove("hidden");
+  onbBackdrop.classList.remove("hidden");
+  onb.classList.remove("hidden");
   setSlide(1);
 
-  // жёсткий обработчик для "Начать"
   $("onbStart").addEventListener("click",(e)=>{ e.preventDefault(); e.stopPropagation(); setSlide(2); },{passive:false});
-
-  // общий обработчик на все data-next
   onb.querySelectorAll("[data-next]").forEach(btn=>{
     btn.addEventListener("click",(e)=>{
       e.preventDefault(); e.stopPropagation();
@@ -132,49 +143,56 @@ function openOnboarding(){
 
   $("onbFinish").onclick = async (e)=>{
     e.preventDefault(); e.stopPropagation();
-    // сохраняем ответы
-    const lifeGoal = $("lifeGoal").value.trim();
-    const goals=[ $("y1").value.trim(), $("y2").value.trim(), $("y3").value.trim() ].filter(Boolean);
-    localStorage.setItem("mg_onb_v1","1");
-    localStorage.setItem("mg_onb_payload", JSON.stringify({ lifeGoal, goals, ts: Date.now() }));
+    localStorage.setItem("mg_onb_v1","1"); // пометка: прошёл вопросы
+    onbBackdrop.classList.add("hidden");
+    onb.classList.add("hidden");
+    scene.classList.remove("blurred");
 
-    onbBackdrop.classList.add("hidden"); onb.classList.add("hidden"); scene.classList.remove("blurred");
-    runGrandpaIntro(); // интро сразу после онбординга
-    await handshake(); if(authed) await warmup();
+    // регистрация и всё остальное
+    await handshake(); if(!authed) await refreshToday();
   };
 }
 
-// дед: 4 фразы = 4 картинки
+// ===== ДЕД (ПОСЛЕ РЕГИСТРАЦИИ, ОДИН РАЗ) =====
 function runGrandpaIntro(){
-  if (localStorage.getItem("mg_intro_v1")) return; // проигрываем только единожды
-  li = 0;
-  grandpa.src = grandpaFrames[0];
-  bubbleText.textContent = lines[0];
+  lineIdx = 0;
+  grandpa.src = FRAMES[0];
+  bubbleText.textContent = LINES[0];
   show(bubble); show(bubbleNext);
 }
 bubbleNext.onclick=()=>{
-  li++;
-  if (li < lines.length){
-    bubbleText.textContent = lines[li];
-    grandpa.src = grandpaFrames[li];
-    if (li === lines.length-1) gardenBg.classList.add("sleep"); // последняя — «спит»
+  lineIdx++;
+  if (lineIdx < LINES.length){
+    bubbleText.textContent = LINES[lineIdx];
+    grandpa.src = FRAMES[lineIdx];
   } else {
     hide(bubble); hide(bubbleNext);
     localStorage.setItem("mg_intro_v1","1");
   }
 };
-// клик по деду, если спит
-grandpa.onclick=()=>{ if(gardenBg.classList.contains("sleep")) toastMsg("Сейчас садовник Витя отдыхает, не доёбывайте его...",2600); };
+grandpa.onclick=()=>{ if (localStorage.getItem("mg_intro_v1")==="1") toastMsg("Сейчас садовник Витя отдыхает, не доёбывайте его...",2600); };
 
-// init
-(async function(){
-  if(window.Telegram?.WebApp) setStatus("tma");
-  // онбординг только при первом визите
-  if(!localStorage.getItem("mg_onb_v1")){
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+(function init(){
+  // создаём бэкдроп модалки здесь, чтобы не мешал онбордингу
+  if (!$("taskModalBackdrop")) {
+    const bd = document.createElement("div");
+    bd.id = "taskModalBackdrop";
+    bd.className = "backdrop hidden";
+    document.body.appendChild(bd);
+  }
+
+  if (window.Telegram?.WebApp) setStatus("tma");
+
+  if (!HAS_ONBOARDING) {
+    // первый визит — задаём вопросы
     openOnboarding();
-  }else{
-    // ничего не показываем — сразу сцена; интро деда проигрываем один раз
-    runGrandpaIntro();
-    await handshake(); if(authed) await warmup(); else await refreshToday();
+  } else {
+    // онбординг уже пройден — даже не показываем
+    onbBackdrop.classList.add("hidden");
+    onb.classList.add("hidden");
+    scene.classList.remove("blurred");
+    // регистрируемся и, если интро ещё не было, запускаем его ПОСЛЕ handshake
+    handshake().then(()=>{ if(!authed) refreshToday(); if(!HAS_INTRO && authed) runGrandpaIntro(); });
   }
 })();
