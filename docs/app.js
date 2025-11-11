@@ -9,27 +9,36 @@ const scene = $("scene");
 const statusEl = $("status");
 const gardenBg = $("gardenBg");
 const toast = $("toast");
+
 let authed = false;
 let templatesMap = new Map();
 
+// дед/реплики
 const bubble = $("bubble"), bubbleText = $("bubbleText"), bubbleNext = $("bubbleNext"), grandpa = $("grandpa");
-const grandpaLines = [
+const lines = [
   "Это Ваше первое растение!",
   "Выполняйте ежедневные задачи, чтобы вырастить его.",
   "Ваша дисциплина создаст красивый сад!",
   "Что-то я устал, пойду вздремну..."
 ];
-let lineIdx = 0;
+const grandpaFrames = [
+  "assets/grandpa_stage1.png",
+  "assets/grandpa_stage2.png",
+  "assets/grandpa_stage3.png",
+  "assets/grandpa_sleep.png"
+];
+let li = 0;
 
 function setStatus(s){ statusEl.textContent = s; }
 function show(el){ el.classList.remove("hidden"); }
 function hide(el){ el.classList.add("hidden"); }
 function toastMsg(msg, ms=2200){ toast.textContent=msg; show(toast); setTimeout(()=>hide(toast),ms); }
+
 async function getJSON(url){ const r=await fetch(url); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 async function postJSON(url, body){ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
-async function postForm(url, obj){ const fd=new FormData(); Object.entries(obj).forEach(([k,v])=>fd.append(k,v)); const r=await fetch(url,{method:"POST",body:fd}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
+async function postForm(url, obj){ const fd=new FormData(); for(const[k,v] of Object.entries(obj)) fd.append(k,v); const r=await fetch(url,{method:"POST",body:fd}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 
-// TMA
+// TMA handshake
 async function handshake(){
   const tg = window.Telegram?.WebApp;
   const initData = tg?.initData || "";
@@ -39,36 +48,49 @@ async function handshake(){
 }
 async function warmup(){ await ensureSeed(); await loadTemplates(); await refreshToday(); }
 async function ensureSeed(){
-  const g = await getJSON(`${API}/api/v1/garden`);
-  if (!g.plants || !g.plants.length){ try{ await postJSON(`${API}/api/v1/garden/plant`, { species_id:1, slot_index:0 }); }catch{} }
+  try{
+    const g = await getJSON(`${API}/api/v1/garden`);
+    if (!g.plants || !g.plants.length){ await postJSON(`${API}/api/v1/garden/plant`, { species_id:1, slot_index:0 }); }
+  }catch{ /* оффлайн/бэк недоступен — игнор */ }
 }
-async function loadTemplates(){ templatesMap.clear(); (await getJSON(`${API}/api/v1/tasks/templates`)).forEach(t=>templatesMap.set(t.id,t.title)); }
+async function loadTemplates(){
+  try{
+    templatesMap.clear();
+    (await getJSON(`${API}/api/v1/tasks/templates`)).forEach(t=>templatesMap.set(t.id,t.title));
+  }catch{}
+}
 
-// today widget
+// Today widget
 async function refreshToday(){
   const box = $("twList"), plus = $("twBigPlus");
-  box.innerHTML=""; if(!authed){ show(plus); return; }
-  const items = await getJSON(`${API}/api/v1/tasks/instances`);
-  if(!items.length){ show(plus); return; }
-  hide(plus);
-  items.slice(0,3).forEach(it=>{
-    const el=document.createElement("div");
-    el.className="tw-item";
-    const title = templatesMap.get(it.template_id) || ("Задача #"+it.template_id);
-    el.innerHTML=`<div><div class="tw-title">${title}</div><div class="tw-meta">вес ${it.weight_cost} • статус ${it.status}</div></div><button class="tw-chip">сделано</button>`;
-    el.querySelector(".tw-chip").onclick=async()=>{
-      try{
-        await postJSON(`${API}/api/v1/tasks/instances/${it.id}/start`,{});
-        const res=await postJSON(`${API}/api/v1/tasks/instances/${it.id}/complete`,{focus_minutes:20});
-        toastMsg(`+XP ${res.xp_awarded} • прогресс ${res.progress_after}`); await refreshToday();
-      }catch{ toastMsg("Ошибка"); }
-    };
-    box.appendChild(el);
-  });
+  box.innerHTML = "";
+  try{
+    if(!authed){ show(plus); return; }
+    const items = await getJSON(`${API}/api/v1/tasks/instances`);
+    if(!items.length){ show(plus); return; }
+    hide(plus);
+    items.slice(0,3).forEach(it=>{
+      const el=document.createElement("div"); el.className="tw-item";
+      const title = templatesMap.get(it.template_id) || ("Задача #"+it.template_id);
+      el.innerHTML = `<div><div class="tw-title">${title}</div><div class="tw-meta">вес ${it.weight_cost} • статус ${it.status}</div></div><button class="tw-chip">сделано</button>`;
+      el.querySelector(".tw-chip").onclick=async()=>{
+        try{
+          await postJSON(`${API}/api/v1/tasks/instances/${it.id}/start`,{});
+          const res=await postJSON(`${API}/api/v1/tasks/instances/${it.id}/complete`,{focus_minutes:20});
+          toastMsg(`+XP ${res.xp_awarded} • прогресс ${res.progress_after}`); await refreshToday();
+        }catch{ toastMsg("Ошибка"); }
+      };
+      box.appendChild(el);
+    });
+  }catch{ show(plus); }
 }
 
 // modal task
-const backdrop = $("modalBackdrop"), modal = $("taskModal");
+const backdrop = document.createElement("div"); // создаём тут, чтобы не перекрывал онбординг фокусом
+backdrop.id="modalBackdrop"; backdrop.className="backdrop hidden";
+document.body.appendChild(backdrop);
+
+const modal = $("taskModal");
 $("twBigPlus").onclick=()=>{ show(backdrop); show(modal); };
 $("closeModal").onclick=()=>{ hide(modal); hide(backdrop); };
 $("saveTask").onclick=async()=>{
@@ -87,78 +109,72 @@ $("saveTask").onclick=async()=>{
   }catch{ $("formHint").textContent="Ошибка сохранения"; }
 };
 
-// onboarding
+// onboarding (показываем только если нет флага)
 const onb = $("onb"), onbBackdrop = $("onbBackdrop");
-const slides = [...onb.querySelectorAll(".onb-slide")];
+const slides = onb.querySelectorAll(".onb-slide");
 function setSlide(step){ slides.forEach(s=>s.classList.toggle("current", Number(s.dataset.step)===step)); }
-
 function openOnboarding(){
   scene.classList.add("blurred");
-  onbBackdrop.style.display="block"; onb.style.display="grid";
+  onbBackdrop.classList.remove("hidden"); onb.classList.remove("hidden");
   setSlide(1);
 
-  // ЖЁСТКИЙ обработчик на «Начать»
-  const startBtn = $("onbStart");
-  if (startBtn) {
-    startBtn.addEventListener("click",(e)=>{
-      e.preventDefault(); e.stopPropagation(); setSlide(2);
-    }, {passive:false});
-  }
+  // жёсткий обработчик для "Начать"
+  $("onbStart").addEventListener("click",(e)=>{ e.preventDefault(); e.stopPropagation(); setSlide(2); },{passive:false});
 
-  // запасной для всех data-next
+  // общий обработчик на все data-next
   onb.querySelectorAll("[data-next]").forEach(btn=>{
     btn.addEventListener("click",(e)=>{
       e.preventDefault(); e.stopPropagation();
-      const cur=Number(btn.closest(".onb-slide").dataset.step);
+      const cur = Number(btn.closest(".onb-slide").dataset.step);
       setSlide(cur+1);
     });
   });
 
-  // Enter => следующий шаг
-  onb.addEventListener("keydown",(e)=>{
-    if(e.key==="Enter"){
-      e.preventDefault();
-      const cur = Number(onb.querySelector(".onb-slide.current")?.dataset.step||1);
-      if(cur<4) setSlide(cur+1);
-    }
-  });
-
   $("onbFinish").onclick = async (e)=>{
     e.preventDefault(); e.stopPropagation();
-    fireConfetti();
+    // сохраняем ответы
     const lifeGoal = $("lifeGoal").value.trim();
     const goals=[ $("y1").value.trim(), $("y2").value.trim(), $("y3").value.trim() ].filter(Boolean);
-    localStorage.setItem("mg_onb_v1", JSON.stringify({lifeGoal,goals,ts:Date.now()}));
-    onbBackdrop.style.display="none"; onb.style.display="none"; scene.classList.remove("blurred");
-    runGrandpaIntro();
+    localStorage.setItem("mg_onb_v1","1");
+    localStorage.setItem("mg_onb_payload", JSON.stringify({ lifeGoal, goals, ts: Date.now() }));
+
+    onbBackdrop.classList.add("hidden"); onb.classList.add("hidden"); scene.classList.remove("blurred");
+    runGrandpaIntro(); // интро сразу после онбординга
     await handshake(); if(authed) await warmup();
   };
 }
-function fireConfetti(){ console.log("confetti!"); } // подключишь свою либу
 
-// дед: реплики + финал (сон)
+// дед: 4 фразы = 4 картинки
 function runGrandpaIntro(){
-  lineIdx=0; bubbleText.textContent = grandpaLines[lineIdx];
-  gardenBg.classList.remove("sleep");
-  grandpa.src="assets/grandpa_stand.png";
+  if (localStorage.getItem("mg_intro_v1")) return; // проигрываем только единожды
+  li = 0;
+  grandpa.src = grandpaFrames[0];
+  bubbleText.textContent = lines[0];
   show(bubble); show(bubbleNext);
 }
 bubbleNext.onclick=()=>{
-  lineIdx++;
-  if(lineIdx<grandpaLines.length){
-    bubbleText.textContent=grandpaLines[lineIdx];
-    if(lineIdx===1) grandpa.src="assets/grandpa_stand2.png";
-    if(lineIdx===2) grandpa.src="assets/grandpa_stand3.png";
-    if(lineIdx===3){ gardenBg.classList.add("sleep"); } // фон с дедушкой в кресле и розой
-  }else{
+  li++;
+  if (li < lines.length){
+    bubbleText.textContent = lines[li];
+    grandpa.src = grandpaFrames[li];
+    if (li === lines.length-1) gardenBg.classList.add("sleep"); // последняя — «спит»
+  } else {
     hide(bubble); hide(bubbleNext);
+    localStorage.setItem("mg_intro_v1","1");
   }
 };
+// клик по деду, если спит
 grandpa.onclick=()=>{ if(gardenBg.classList.contains("sleep")) toastMsg("Сейчас садовник Витя отдыхает, не доёбывайте его...",2600); };
 
 // init
-(function(){
+(async function(){
   if(window.Telegram?.WebApp) setStatus("tma");
-  if(!localStorage.getItem("mg_onb_v1")) openOnboarding();
-  else { handshake().then(()=>{ if(authed) warmup(); }); }
+  // онбординг только при первом визите
+  if(!localStorage.getItem("mg_onb_v1")){
+    openOnboarding();
+  }else{
+    // ничего не показываем — сразу сцена; интро деда проигрываем один раз
+    runGrandpaIntro();
+    await handshake(); if(authed) await warmup(); else await refreshToday();
+  }
 })();

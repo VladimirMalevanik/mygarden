@@ -21,11 +21,9 @@
     <div id="gardenBg" class="garden-bg"></div>
 
     <div class="garden-layer" id="gardenLayer">
-      <!-- росток / цветок у грядки -->
       <img id="sproutImg" class="sprout" src="assets/sprout.png" alt="sprout"
            onerror="this.replaceWith(document.createTextNode('🌱'))">
-      <!-- дед -->
-      <img id="grandpa" class="grandpa" src="assets/grandpa_stand.png" alt="садовник"
+      <img id="grandpa" class="grandpa" src="assets/grandpa_stage1.png" alt="садовник"
            onerror="this.replaceWith(document.createTextNode('👴'))">
 
       <!-- реплики -->
@@ -53,9 +51,9 @@
     <button class="tab-btn" disabled title="Настройки">⚙️</button>
   </nav>
 
-  <!-- ОНБОРДИНГ -->
-  <div id="onbBackdrop" class="onb-backdrop"></div>
-  <div id="onb" class="onb" role="dialog" aria-modal="true">
+  <!-- ОНБОРДИНГ (показывается только при первом заходе) -->
+  <div id="onbBackdrop" class="onb-backdrop hidden"></div>
+  <div id="onb" class="onb hidden" role="dialog" aria-modal="true">
     <!-- 1 -->
     <section class="onb-slide current" data-step="1">
       <div class="onb-card splash">
@@ -95,38 +93,7 @@
     </section>
   </div>
 
-  <!-- МОДАЛКА ЗАДАЧИ -->
-  <div id="modalBackdrop" class="backdrop hidden"></div>
-  <div id="taskModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-header">
-      <div>Новая задача</div>
-      <button id="closeModal" class="icon-btn" aria-label="Закрыть">✕</button>
-    </div>
-    <div class="modal-body">
-      <label class="field"><span>Что бы вы хотели сделать?</span><input id="f_title" placeholder="Например: выучить 20 слов"/></label>
-      <div class="row">
-        <label class="field"><span>Приоритет</span>
-          <select id="f_priority"><option value="low">низкий</option><option value="medium" selected>средний</option><option value="high">высокий</option></select>
-        </label>
-        <label class="field"><span>Проект</span><input id="f_project" placeholder="Учёба / Спорт / Дом"/></label>
-      </div>
-      <div class="row">
-        <label class="field"><span>Дата</span><input id="f_date" type="date"/></label>
-        <label class="field"><span>Время</span><input id="f_time" type="time"/></label>
-      </div>
-      <div class="row">
-        <label class="field"><span>Режим</span>
-          <select id="f_mode"><option value="timer" selected>таймер</option><option value="checkbox">чекбокс</option><option value="counter">счётчик</option></select>
-        </label>
-        <label class="field"><span>Оценка (мин)</span><input id="f_effort" type="number" min="1" value="25"/></label>
-      </div>
-      <div class="row"><button id="saveTask" class="btn forest">Добавить</button></div>
-      <div id="formHint" class="muted small"></div>
-    </div>
-  </div>
-
   <div id="toast" class="toast hidden"></div>
-
   <footer class="footer">API: <code id="apiBase"></code></footer>
   <script src="app.js"></script>
 </body>
