@@ -104,47 +104,79 @@ $("saveTask").onclick=async()=>{
   }catch{ $("formHint").textContent="Ошибка сохранения"; }
 };
 
-// ONBOARDING (только первый визит)
+// ONBOARDING - ПЕРЕПИСАННАЯ ЛОГИКА
 const onb = $("onb"), onbBackdrop = $("onbBackdrop");
 const slides = onb.querySelectorAll(".onb-slide");
-function setSlide(step){ slides.forEach(s=>s.classList.toggle("current", Number(s.dataset.step)===step)); }
+let currentSlide = 1;
 
-function openOnboarding(){
-  document.body.classList.add("onboarding");
-  scene.classList.add("blurred");
-  onbBackdrop.classList.remove("hidden");
-  onb.classList.remove("hidden");
-  setSlide(1);
+function setSlide(step) {
+  currentSlide = step;
+  slides.forEach(s => {
+    s.classList.toggle("current", Number(s.dataset.step) === step);
+  });
+}
 
-  // Исправленные обработчики для кнопки "Начать"
-  $("onbStart").onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSlide(2);
-  };
+function initOnboardingHandlers() {
+  console.log("Initializing onboarding handlers...");
+  
+  // Кнопка "Начать" в первом слайде
+  const startBtn = $("onbStart");
+  if (startBtn) {
+    console.log("Start button found, attaching handler");
+    startBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log("Start button clicked");
+      setSlide(2);
+    };
+  } else {
+    console.error("Start button not found!");
+  }
 
-  // Обработчики для остальных кнопок "Далее"
-  onb.querySelectorAll("[data-next]").forEach(btn => {
+  // Кнопки "ОК" в следующих слайдах
+  const nextButtons = onb.querySelectorAll("[data-next]");
+  nextButtons.forEach(btn => {
     btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const cur = Number(btn.closest(".onb-slide").dataset.step);
-      setSlide(cur + 1);
+      const curSlide = btn.closest(".onb-slide");
+      if (curSlide) {
+        const curStep = Number(curSlide.dataset.step);
+        setSlide(curStep + 1);
+      }
     };
   });
 
-  // Обработчик для кнопки завершения
-  $("onbFinish").onclick = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    localStorage.setItem("mg_onb_v1","1");
-    onbBackdrop.classList.add("hidden");
-    onb.classList.add("hidden");
-    scene.classList.remove("blurred");
-    document.body.classList.remove("onboarding");
-    await handshake();
-    if(!authed) await refreshToday();
-  };
+  // Кнопка завершения
+  const finishBtn = $("onbFinish");
+  if (finishBtn) {
+    finishBtn.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log("Finishing onboarding");
+      localStorage.setItem("mg_onb_v1", "1");
+      hide(onbBackdrop);
+      hide(onb);
+      scene.classList.remove("blurred");
+      document.body.classList.remove("onboarding");
+      await handshake();
+      if (!authed) await refreshToday();
+    };
+  }
+}
+
+function openOnboarding() {
+  console.log("Opening onboarding...");
+  document.body.classList.add("onboarding");
+  scene.classList.add("blurred");
+  show(onbBackdrop);
+  show(onb);
+  setSlide(1);
+  
+  // Даем время DOM обновиться перед инициализацией обработчиков
+  setTimeout(() => {
+    initOnboardingHandlers();
+  }, 100);
 }
 
 // GRANDPA (один раз после регистрации/первого запуска)
@@ -168,10 +200,14 @@ grandpa.onclick=()=>{ if (localStorage.getItem("mg_intro_v1")==="1") toastMsg("�
 
 // init
 (function(){
+  console.log("App initializing, HAS_ONBOARDING:", HAS_ONBOARDING);
   if(window.Telegram?.WebApp) setStatus("tma");
+  
   if(!HAS_ONBOARDING){ 
+    console.log("Showing onboarding for first time user");
     openOnboarding(); 
   } else { 
+    console.log("User has completed onboarding, skipping");
     handshake().then(()=>{ 
       if(!authed) refreshToday(); 
       if(!HAS_INTRO && authed) runGrandpaIntro(); 
