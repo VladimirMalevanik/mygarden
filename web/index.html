@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MyGarden • Mini App</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Telegram Mini Apps SDK (для реального запуска внутри Telegram) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🌱 MyGarden</div>
+    <div id="status" class="status">offline</div>
+  </header>
+
+  <main class="container">
+    <section id="auth" class="card">
+      <h2>Онбординг</h2>
+      <p>Нажми, чтобы войти через Telegram (TMA).</p>
+      <button id="btnHandshake" class="btn primary">Войти (handshake)</button>
+      <p class="muted">Не в Telegram? Нажми «мок-вход» — для локальной проверки.</p>
+      <button id="btnMock" class="btn">Мок-вход</button>
+      <div id="meBox" class="muted small"></div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Задачи на сегодня</h2>
+        <div id="tasksBox" class="list"></div>
+        <div class="row">
+          <button id="btnRefreshTasks" class="btn">Обновить</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Создать шаблон</h2>
+        <div class="form">
+          <input id="tplTitle" placeholder="Заголовок (напр. Учёба: конспект)"/>
+          <input id="tplEffort" type="number" min="1" value="25" />
+          <select id="tplMode">
+            <option value="timer">timer</option>
+            <option value="checkbox">checkbox</option>
+            <option value="counter">counter</option>
+          </select>
+          <button id="btnCreateTpl" class="btn primary">Создать</button>
+        </div>
+        <div id="tplMsg" class="muted small"></div>
+      </div>
+
+      <div class="card">
+        <h2>Сад</h2>
+        <div id="gardenBox" class="list"></div>
+        <div class="row">
+          <input id="slotIndex" type="number" min="0" value="0"/>
+          <input id="speciesId" type="number" min="1" value="1"/>
+          <button id="btnPlant" class="btn">Посадить</button>
+          <button id="btnWater" class="btn">Полить</button>
+          <button id="btnGardenRefresh" class="btn">Обновить</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Сводка</h2>
+        <button id="btnSummary" class="btn">Показать сводку</button>
+        <pre id="summaryBox" class="pre"></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>API: <code id="apiBase"></code></span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
-from . import models
 from .config import settings
 from .scheduler import start_scheduler
 
@@ -15,6 +15,20 @@ from .routers_daily import router as daily_router
 def create_app():
     Base.metadata.create_all(bind=engine)
     app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
+
+    # CORS: разрешаем фронту с любого домена (для продакшена подставь свой домен)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/health")
+    def health():
+        return {"ok": True}
+
     app.include_router(auth_router)
     app.include_router(me_router)
     app.include_router(strategies_router)
