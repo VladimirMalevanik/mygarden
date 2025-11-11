@@ -1,14 +1,8 @@
 /* ——— ЯРКАЯ ЗЕЛЁНАЯ ТЕМА ——— */
 :root{
-  --bg:#07140a;
-  --fg:#f0fff2;
-  --muted:#bfe6c7;
-  --gold:#f3d27a;
-  --accent:#35d073;
-  --accent-2:#2ecb9d;
-  --panel:#0d2d15;
-  --card:#0f3319;
-  --border:#1b4d29;
+  --bg:#07140a; --fg:#f0fff2; --muted:#bfe6c7;
+  --gold:#f3d27a; --accent:#35d073; --accent-2:#2ecb9d;
+  --panel:#0d2d15; --card:#0f3319; --border:#1b4d29;
   --shadow:0 20px 60px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
@@ -23,27 +17,35 @@ body{margin:0;background:radial-gradient(120% 120% at 50% 0%,#10381e 0%,#07140a 
 .status{font-size:12px;color:var(--muted)}
 
 /* ——— Сад (полноэкранный) ——— */
-.garden-full{position:relative;min-height:calc(100vh - 110px);overflow:hidden}
+.garden-full{position:relative;min-height:calc(100vh - 110px);overflow:hidden;transition:filter .3s ease}
+.garden-full.blurred{filter:blur(8px)}
 .garden-bg{position:absolute;inset:0;background:
   radial-gradient(70% 45% at 50% 20%, rgba(55,220,120,.28), transparent 60%),
   radial-gradient(60% 40% at 10% 90%, rgba(46,203,157,.2), transparent 60%),
   radial-gradient(60% 40% at 90% 90%, rgba(55,220,120,.18), transparent 60%)}
 .garden-layer{position:relative;inset:0;height:100%}
 .sprout{position:absolute;left:50%;transform:translateX(-50%);bottom:70px;width:140px;filter:drop-shadow(0 10px 28px rgba(0,0,0,.55))}
-.grandpa{position:absolute;right:40px;bottom:32px;width:200px;cursor:pointer;filter:drop-shadow(0 12px 28px rgba(0,0,0,.5))}
+.grandpa{position:absolute;right:40px;bottom:32px;width:200px;filter:drop-shadow(0 12px 28px rgba(0,0,0,.5))}
 
-/* ——— Виджет «Сегодня осталось» (правый верх) ——— */
+/* ——— Спич-бабл ——— */
+.bubble{position:absolute;right:260px;bottom:210px;max-width:360px;
+  background:#0f3a20;border:1px solid #1a6d3e;border-radius:14px;padding:10px 12px;
+  box-shadow:var(--shadow);animation:pop .2s ease}
+.bubble-tail{position:absolute;right:-10px;bottom:20px;width:0;height:0;border-left:12px solid #0f3a20;border-top:10px solid transparent;border-bottom:10px solid transparent}
+.bubble-next{position:absolute;inset:0;background:transparent;border:0;cursor:pointer}
+@keyframes pop{from{transform:scale(.9);opacity:.5}to{transform:scale(1);opacity:1}}
+.hidden{display:none}
+
+/* ——— Виджет «Сегодня осталось» ——— */
 .card{background:rgba(12,48,24,.8);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
 .today-widget{position:absolute;right:20px;top:20px;width:min(360px,40vw);padding:12px}
 .tw-head{color:var(--gold);font-weight:800;margin:2px 0 8px}
 .tw-list{display:flex;flex-direction:column;gap:8px}
-.tw-item{display:flex;justify-content:space-between;align-items:center;
-  background:rgba(16,64,32,.8);border:1px solid var(--border);border-radius:12px;padding:10px}
+.tw-item{display:flex;justify-content:space-between;align-items:center;background:rgba(16,64,32,.8);border:1px solid var(--border);border-radius:12px;padding:10px}
 .tw-title{font-weight:700}
 .tw-meta{font-size:12px;color:var(--muted)}
 .tw-chip{font-size:12px;padding:4px 8px;border-radius:8px;background:#165a33;border:1px solid #1a6d3e;cursor:pointer}
-.tw-big-plus{display:none;margin-top:8px;width:100%;aspect-ratio:3/1.2;border-radius:14px;border:2px dashed var(--gold);
-  color:var(--gold);font-weight:900;font-size:44px;background:transparent;cursor:pointer}
+.tw-big-plus{display:none;margin-top:8px;width:100%;aspect-ratio:3/1.2;border-radius:14px;border:2px dashed var(--gold);color:var(--gold);font-weight:900;font-size:44px;background:transparent;cursor:pointer}
 
 /* ——— Таббар ——— */
 .tabbar{position:sticky;bottom:0;z-index:40;display:flex;justify-content:space-around;gap:10px;
@@ -53,9 +55,7 @@ body{margin:0;background:radial-gradient(120% 120% at 50% 0%,#10381e 0%,#07140a 
 
 /* ——— Модалка задачи ——— */
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px)}
-.modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);
-  width:min(560px,94vw);background:rgba(12,48,24,.96);border:1px solid var(--border);border-radius:16px;
-  box-shadow:var(--shadow);padding:12px 12px 16px}
+.modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:min(560px,94vw);background:rgba(12,48,24,.96);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:12px 12px 16px}
 .modal-header{display:flex;justify-content:space-between;align-items:center;color:var(--gold);font-weight:800;margin-bottom:8px}
 .modal-body{display:grid;gap:12px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -68,7 +68,6 @@ input,select{width:100%;background:#0e3a21;color:#eaffef;border:1px solid #1a6d3
 .btn.gold{background:linear-gradient(180deg,#ffd77a,#f3c254);color:#2a1900;border:0;font-weight:800}
 .field{display:flex;flex-direction:column;gap:6px}
 .muted{color:var(--muted)}.small{font-size:12px}
-.hidden{display:none}
 
 /* ——— Онбординг ——— */
 .onb-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);z-index:60}
@@ -78,6 +77,9 @@ input,select{width:100%;background:#0e3a21;color:#eaffef;border:1px solid #1a6d3
 .logo{font-size:44px;margin:0 0 10px;color:#f1e2b0;text-shadow:0 2px 12px rgba(0,0,0,.3)}
 .tagline{color:#e8d7a2;margin:0 0 16px}
 .congrats .gift{font-size:56px;margin:10px 0}
+.onb-slide{position:absolute;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .25s ease, transform .25s ease}
+.onb-slide.current{opacity:1;transform:translateY(0);pointer-events:auto}
+.fade-slide.hidden{opacity:0;transform:translateY(10px);pointer-events:none}
 
 /* ——— Toast ——— */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;background:#0f3a20;color:#eaffef;border:1px solid #1a6d3e;border-radius:12px;padding:10px 14px;max-width:92vw;box-shadow:var(--shadow)}
