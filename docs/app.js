@@ -7,24 +7,24 @@ document.getElementById("apiBase")?.append(document.createTextNode(API));
 const $ = id => document.getElementById(id);
 const scene = $("scene");
 const statusEl = $("status");
+const gardenBg = $("gardenBg");
 const toast = $("toast");
 let authed = false;
 let templatesMap = new Map();
 
 const bubble = $("bubble"), bubbleText = $("bubbleText"), bubbleNext = $("bubbleNext"), grandpa = $("grandpa");
-const lines = [
+const grandpaLines = [
   "Это Ваше первое растение!",
   "Выполняйте ежедневные задачи, чтобы вырастить его.",
   "Ваша дисциплина создаст красивый сад!",
   "Что-то я устал, пойду вздремну..."
 ];
-let li = 0;
+let lineIdx = 0;
 
 function setStatus(s){ statusEl.textContent = s; }
 function show(el){ el.classList.remove("hidden"); }
 function hide(el){ el.classList.add("hidden"); }
 function toastMsg(msg, ms=2200){ toast.textContent=msg; show(toast); setTimeout(()=>hide(toast),ms); }
-
 async function getJSON(url){ const r=await fetch(url); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 async function postJSON(url, body){ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 async function postForm(url, obj){ const fd=new FormData(); Object.entries(obj).forEach(([k,v])=>fd.append(k,v)); const r=await fetch(url,{method:"POST",body:fd}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
@@ -47,20 +47,19 @@ async function loadTemplates(){ templatesMap.clear(); (await getJSON(`${API}/api
 // today widget
 async function refreshToday(){
   const box = $("twList"), plus = $("twBigPlus");
-  box.innerHTML = "";
-  if (!authed){ show(plus); return; }
+  box.innerHTML=""; if(!authed){ show(plus); return; }
   const items = await getJSON(`${API}/api/v1/tasks/instances`);
-  if (!items.length){ show(plus); return; }
+  if(!items.length){ show(plus); return; }
   hide(plus);
   items.slice(0,3).forEach(it=>{
-    const el = document.createElement("div");
-    el.className = "tw-item";
+    const el=document.createElement("div");
+    el.className="tw-item";
     const title = templatesMap.get(it.template_id) || ("Задача #"+it.template_id);
-    el.innerHTML = `<div><div class="tw-title">${title}</div><div class="tw-meta">вес ${it.weight_cost} • статус ${it.status}</div></div><button class="tw-chip">сделано</button>`;
-    el.querySelector(".tw-chip").onclick = async ()=>{
+    el.innerHTML=`<div><div class="tw-title">${title}</div><div class="tw-meta">вес ${it.weight_cost} • статус ${it.status}</div></div><button class="tw-chip">сделано</button>`;
+    el.querySelector(".tw-chip").onclick=async()=>{
       try{
-        await postJSON(`${API}/api/v1/tasks/instances/${it.id}/start`, {});
-        const res = await postJSON(`${API}/api/v1/tasks/instances/${it.id}/complete`, { focus_minutes: 20 });
+        await postJSON(`${API}/api/v1/tasks/instances/${it.id}/start`,{});
+        const res=await postJSON(`${API}/api/v1/tasks/instances/${it.id}/complete`,{focus_minutes:20});
         toastMsg(`+XP ${res.xp_awarded} • прогресс ${res.progress_after}`); await refreshToday();
       }catch{ toastMsg("Ошибка"); }
     };
@@ -70,16 +69,16 @@ async function refreshToday(){
 
 // modal task
 const backdrop = $("modalBackdrop"), modal = $("taskModal");
-$("twBigPlus").onclick = ()=>{ show(backdrop); show(modal); };
-$("closeModal").onclick = ()=>{ hide(modal); hide(backdrop); };
-$("saveTask").onclick = async ()=>{
+$("twBigPlus").onclick=()=>{ show(backdrop); show(modal); };
+$("closeModal").onclick=()=>{ hide(modal); hide(backdrop); };
+$("saveTask").onclick=async()=>{
   const title = $("f_title").value.trim(); if(!title){ $("formHint").textContent="Название обязательно"; return; }
   const priority = $("f_priority").value;
   const effort = Math.max(1, +$("f_effort").value || 25);
   const project = $("f_project").value.trim();
   const mode = $("f_mode").value;
   const date = $("f_date").value, time = $("f_time").value;
-  const planned_windows = (date && time) ? `${time}-${time}` : "08:00-22:00";
+  const planned_windows = (date && time)?`${time}-${time}`:"08:00-22:00";
   const difficulty = priority==="high"?4:priority==="medium"?3:2;
   const category = project?`${project}:${priority}`:`inbox:${priority}`;
   try{
@@ -88,72 +87,78 @@ $("saveTask").onclick = async ()=>{
   }catch{ $("formHint").textContent="Ошибка сохранения"; }
 };
 
-// onboarding (по порядку, плавно)
+// onboarding
 const onb = $("onb"), onbBackdrop = $("onbBackdrop");
 const slides = [...onb.querySelectorAll(".onb-slide")];
-function setSlide(step){
-  slides.forEach(s=>{
-    const active = Number(s.dataset.step)===step;
-    s.classList.toggle("current", active);
-  });
-}
+function setSlide(step){ slides.forEach(s=>s.classList.toggle("current", Number(s.dataset.step)===step)); }
+
 function openOnboarding(){
   scene.classList.add("blurred");
-  onbBackdrop.style.display = "block";
-  onb.style.display = "grid";
+  onbBackdrop.style.display="block"; onb.style.display="grid";
   setSlide(1);
+
+  // ЖЁСТКИЙ обработчик на «Начать»
+  const startBtn = $("onbStart");
+  if (startBtn) {
+    startBtn.addEventListener("click",(e)=>{
+      e.preventDefault(); e.stopPropagation(); setSlide(2);
+    }, {passive:false});
+  }
+
+  // запасной для всех data-next
   onb.querySelectorAll("[data-next]").forEach(btn=>{
-    btn.onclick = ()=>{
-      const cur = Number(btn.closest(".onb-slide").dataset.step);
+    btn.addEventListener("click",(e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const cur=Number(btn.closest(".onb-slide").dataset.step);
       setSlide(cur+1);
-    };
+    });
   });
-  $("onbFinish").onclick = async ()=>{
-    fireConfetti();                     // вставишь свою реализацию
-    // сохраняем ответы
+
+  // Enter => следующий шаг
+  onb.addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"){
+      e.preventDefault();
+      const cur = Number(onb.querySelector(".onb-slide.current")?.dataset.step||1);
+      if(cur<4) setSlide(cur+1);
+    }
+  });
+
+  $("onbFinish").onclick = async (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    fireConfetti();
     const lifeGoal = $("lifeGoal").value.trim();
-    const goals = [ $("y1").value.trim(), $("y2").value.trim(), $("y3").value.trim() ].filter(Boolean);
-    localStorage.setItem("mg_onb_v1", JSON.stringify({ lifeGoal, goals, ts: Date.now() }));
-    // убираем онбординг и блюр
-    onbBackdrop.style.display="none";
-    onb.style.display="none";
-    scene.classList.remove("blurred");
-    // показываем дедушку с репликами
+    const goals=[ $("y1").value.trim(), $("y2").value.trim(), $("y3").value.trim() ].filter(Boolean);
+    localStorage.setItem("mg_onb_v1", JSON.stringify({lifeGoal,goals,ts:Date.now()}));
+    onbBackdrop.style.display="none"; onb.style.display="none"; scene.classList.remove("blurred");
     runGrandpaIntro();
-    // логинимся (если TMA) и греем данные
-    await handshake(); if (authed) await warmup();
+    await handshake(); if(authed) await warmup();
   };
 }
-function fireConfetti(){
-  // заглушка — сюда подключишь canvas-confetti или свой скрипт
-  // пример: confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-  console.log("confetti!");
-}
+function fireConfetti(){ console.log("confetti!"); } // подключишь свою либу
 
-// дед: цепочка фраз и смена поз
+// дед: реплики + финал (сон)
 function runGrandpaIntro(){
-  li = 0;
-  grandpa.src = "assets/grandpa_stand.png";
-  bubbleText.textContent = lines[li];
+  lineIdx=0; bubbleText.textContent = grandpaLines[lineIdx];
+  gardenBg.classList.remove("sleep");
+  grandpa.src="assets/grandpa_stand.png";
   show(bubble); show(bubbleNext);
 }
-bubbleNext.onclick = ()=>{
-  li++;
-  if (li < lines.length){
-    bubbleText.textContent = lines[li];
-    if (li === 1) grandpa.src = "assets/grandpa_stand2.png";
-    if (li === 2) grandpa.src = "assets/grandpa_stand3.png";
-    if (li === 3) grandpa.src = "assets/grandpa_sit.png";
-  } else {
+bubbleNext.onclick=()=>{
+  lineIdx++;
+  if(lineIdx<grandpaLines.length){
+    bubbleText.textContent=grandpaLines[lineIdx];
+    if(lineIdx===1) grandpa.src="assets/grandpa_stand2.png";
+    if(lineIdx===2) grandpa.src="assets/grandpa_stand3.png";
+    if(lineIdx===3){ gardenBg.classList.add("sleep"); } // фон с дедушкой в кресле и розой
+  }else{
     hide(bubble); hide(bubbleNext);
   }
 };
+grandpa.onclick=()=>{ if(gardenBg.classList.contains("sleep")) toastMsg("Сейчас садовник Витя отдыхает, не доёбывайте его...",2600); };
 
 // init
 (function(){
-  document.body.style.fontFamily = getComputedStyle(document.documentElement).getPropertyValue('--font');
-  // показать онбординг, если не проходили
-  if (!localStorage.getItem("mg_onb_v1")) openOnboarding();
-  else { handshake().then(()=>{ if (authed) warmup(); }); }
-  if (window.Telegram?.WebApp) setStatus("tma");
+  if(window.Telegram?.WebApp) setStatus("tma");
+  if(!localStorage.getItem("mg_onb_v1")) openOnboarding();
+  else { handshake().then(()=>{ if(authed) warmup(); }); }
 })();

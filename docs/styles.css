@@ -2,7 +2,6 @@
 :root{
   --font:"Manrope",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
 
-  /* salad/light */
   --salad-050:#fbfff6; --salad-100:#f4ffe4; --salad-200:#e9ffc8; --salad-300:#d6ff9e;
   --salad-400:#c4ff76; --salad-500:#aaf556; --salad-600:#8ddd3f; --salad-700:#6bb52d;
 
@@ -10,7 +9,7 @@
 
   --sun-300:#ffe487; --sun-400:#ffd451; --sun-900:#7a5a12;
 
-  --stone-200:#e7efe0; --stone-400:#d4e3c7; --stone-600:#9fb192;
+  --stone-200:#e7efe0; --stone-400:#d4e3c7;
 
   --bg:var(--salad-100);
   --fg:#1f3113;
@@ -32,7 +31,7 @@ body{
 .topbar{
   position:sticky; top:0; z-index:50; display:flex; justify-content:space-between; align-items:center;
   padding:12px 16px; background:rgba(255,255,255,.7); backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--card-border);
+  border-bottom:1px solid var(--card-border)
 }
 .brand{font-weight:800; letter-spacing:.4px; color:var(--forest-700)}
 .status{font-size:12px; color:var(--muted)}
@@ -40,14 +39,11 @@ body{
 /* ---------- Сцена ---------- */
 .garden-full{position:relative; min-height:calc(100vh - 110px); overflow:hidden; transition:filter .25s ease}
 .garden-full.blurred{filter:blur(8px)}
-.garden-bg{
-  position:absolute; inset:0;
-  background: url("assets/garden_bg.png") center/cover no-repeat;
-}
-.garden-bg.sleep { background-image: url("assets/garden_bg_sleep.png"); }
+.garden-bg{position:absolute; inset:0; background:url("assets/garden_bg.png") center/cover no-repeat}
+.garden-bg.sleep{background-image:url("assets/garden_bg_sleep.png")}
 .garden-layer{position:relative; height:100%}
 
-/* ставим росток в область грядки (правый низ сцены) */
+/* росток у грядки (подгони при необходимости) */
 .sprout{position:absolute; right:200px; bottom:110px; width:110px; filter:drop-shadow(0 10px 24px rgba(0,0,0,.15))}
 .grandpa{position:absolute; right:320px; bottom:180px; width:120px; transition:transform .25s ease; filter:drop-shadow(0 10px 24px rgba(0,0,0,.18))}
 
@@ -55,10 +51,9 @@ body{
 .bubble{
   position:absolute; right:340px; bottom:330px; max-width:420px;
   background:#fff; border:1px solid var(--card-border); border-radius:14px; padding:10px 14px;
-  box-shadow:var(--shadow); animation:pop .2s ease; color:#1f3113; font-weight:700;
+  box-shadow:var(--shadow); animation:pop .2s ease; color:#1f3113; font-weight:700
 }
-.bubble-tail{position:absolute; right:8px; bottom:-12px; width:0; height:0;
-  border-top:12px solid #fff; border-left:10px solid transparent; border-right:10px solid transparent}
+.bubble-tail{position:absolute; right:8px; bottom:-12px; width:0; height:0; border-top:12px solid #fff; border-left:10px solid transparent; border-right:10px solid transparent}
 .bubble-next{position:absolute; inset:0; background:transparent; border:0; cursor:pointer}
 @keyframes pop{from{transform:translateY(6px);opacity:.7} to{transform:translateY(0);opacity:1}}
 .hidden{display:none}

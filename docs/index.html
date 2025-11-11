@@ -18,19 +18,17 @@
 
   <!-- СЦЕНА -->
   <main id="scene" class="garden-full">
-    <!-- фон сада — картинка -->
     <div id="gardenBg" class="garden-bg"></div>
 
     <div class="garden-layer" id="gardenLayer">
-      <!-- росток/цветок (ставим над грядкой) -->
+      <!-- росток / цветок у грядки -->
       <img id="sproutImg" class="sprout" src="assets/sprout.png" alt="sprout"
            onerror="this.replaceWith(document.createTextNode('🌱'))">
-
-      <!-- дедушка (стоит/меняет позы; в финале фон сменится на sleeping) -->
+      <!-- дед -->
       <img id="grandpa" class="grandpa" src="assets/grandpa_stand.png" alt="садовник"
            onerror="this.replaceWith(document.createTextNode('👴'))">
 
-      <!-- спич-бабл -->
+      <!-- реплики -->
       <div id="bubble" class="bubble hidden">
         <div id="bubbleText"></div>
         <div class="bubble-tail"></div>
@@ -55,14 +53,14 @@
     <button class="tab-btn" disabled title="Настройки">⚙️</button>
   </nav>
 
-  <!-- ОНБОРДИНГ: последовательно, с блюром сцены -->
+  <!-- ОНБОРДИНГ -->
   <div id="onbBackdrop" class="onb-backdrop"></div>
   <div id="onb" class="onb" role="dialog" aria-modal="true">
     <!-- 1 -->
     <section class="onb-slide current" data-step="1">
       <div class="onb-card splash">
         <h1 class="logo">MyGarden</h1>
-        <p class="tagline">сделай скуку своим другом</p>
+        <p class="tagline">Преврати рутину в игру</p>
         <button id="onbStart" class="btn sunlight" data-next>Начать</button>
       </div>
     </section>
@@ -127,7 +125,6 @@
     </div>
   </div>
 
-  <!-- ТОСТ -->
   <div id="toast" class="toast hidden"></div>
 
   <footer class="footer">API: <code id="apiBase"></code></footer>
