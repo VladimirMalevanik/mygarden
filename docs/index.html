@@ -1,31 +1,118 @@
-<!doctype html><html lang="ru"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>MyGarden • Mini App</title>
-<link rel="stylesheet" href="styles.css"/>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-</head><body>
-<header class="topbar"><div class="brand">🌱 MyGarden</div><div id="status" class="status">offline</div></header>
-<main class="container">
-<section id="auth" class="card"><h2>Онбординг</h2>
-<p>Войти через Telegram (TMA) → handshake.</p>
-<button id="btnHandshake" class="btn primary">Войти (handshake)</button>
-<p class="muted">Для локалки нужен временный «разрешённый» initData или ослабленная проверка на бэке.</p>
-<div id="meBox" class="muted small"></div></section>
-<section class="grid">
-  <div class="card"><h2>Задачи на сегодня</h2><div id="tasksBox" class="list"></div>
-    <div class="row"><button id="btnRefreshTasks" class="btn">Обновить</button></div></div>
-  <div class="card"><h2>Создать шаблон</h2>
-    <div class="form">
-      <input id="tplTitle" placeholder="Учёба: конспект"/><input id="tplEffort" type="number" min="1" value="25"/>
-      <select id="tplMode"><option value="timer">timer</option><option value="checkbox">checkbox</option><option value="counter">counter</option></select>
-      <button id="btnCreateTpl" class="btn primary">Создать</button></div>
-    <div id="tplMsg" class="muted small"></div></div>
-  <div class="card"><h2>Сад</h2><div id="gardenBox" class="list"></div>
-    <div class="row">
-      <input id="slotIndex" type="number" min="0" value="0"/><input id="speciesId" type="number" min="1" value="1"/>
-      <button id="btnPlant" class="btn">Посадить</button><button id="btnWater" class="btn">Полить</button>
-      <button id="btnGardenRefresh" class="btn">Обновить</button></div></div>
-  <div class="card"><h2>Сводка</h2><button id="btnSummary" class="btn">Показать сводку</button><pre id="summaryBox" class="pre"></pre></div>
-</section></main>
-<footer class="footer">API: <code id="apiBase"></code></footer>
-<script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>MyGarden • Мой Сад</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body class="theme-garden">
+  <header class="topbar">
+    <div class="brand">MyGarden</div>
+    <div id="status" class="status">tma</div>
+  </header>
+
+  <main class="garden-layout">
+    <!-- ЛЕВАЯ КОЛОНКА: карточка "Сегодня осталось" -->
+    <aside class="left-pane card">
+      <div class="left-header">Сегодня осталось</div>
+      <div id="todayList" class="todo-list"></div>
+
+      <!-- LARGE PLUS (если задач нет) -->
+      <button id="bigPlus" class="big-plus" title="Добавить задачу">+</button>
+    </aside>
+
+    <!-- ЦЕНТР: сам сад -->
+    <section class="garden card">
+      <div class="garden-canvas">
+        <!-- грядка -->
+        <img id="sproutImg" class="sprout" src="assets/sprout.png" alt="sprout" onerror="this.replaceWith(document.createTextNode('🌱'))">
+        <!-- дедушка -->
+        <img id="grandpa" class="grandpa" src="assets/grandpa.png" alt="садовник" onerror="this.replaceWith(document.createTextNode('👴'))">
+      </div>
+    </section>
+
+    <!-- ПРАВАЯ ПУСТАЯ КОЛОНКА (для будущих виджетов) -->
+    <aside class="right-pane card">
+      <div class="muted">Здесь позже появятся бустеры и декор.</div>
+    </aside>
+  </main>
+
+  <!-- НИЖНЯЯ ПАНЕЛЬ: 5 вкладок -->
+  <nav class="tabbar">
+    <button class="tab-btn" disabled title="Дом">🏠</button>
+    <button class="tab-btn" disabled title="Задачи">📝</button>
+    <button class="tab-btn active" title="Мой Сад">🌳</button>
+    <button class="tab-btn" disabled title="Лист">🍃</button>
+    <button class="tab-btn" disabled title="Настройки">⚙️</button>
+  </nav>
+
+  <!-- МОДАЛКА СОЗДАНИЯ ЗАДАЧИ -->
+  <div id="modalBackdrop" class="backdrop hidden"></div>
+  <div id="taskModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>Новая задача</div>
+      <button id="closeModal" class="icon-btn" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field">
+        <span>Что бы вы хотели сделать?</span>
+        <input id="f_title" placeholder="Например: выучить 20 слов по нем."/>
+      </label>
+
+      <div class="row">
+        <label class="field">
+          <span>Приоритет</span>
+          <select id="f_priority">
+            <option value="low">низкий</option>
+            <option value="medium" selected>средний</option>
+            <option value="high">высокий</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Проект</span>
+          <input id="f_project" placeholder="Учёба / Спорт / Дом"/>
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="field">
+          <span>Дата</span>
+          <input id="f_date" type="date"/>
+        </label>
+        <label class="field">
+          <span>Время</span>
+          <input id="f_time" type="time"/>
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="field">
+          <span>Режим</span>
+          <select id="f_mode">
+            <option value="timer" selected>таймер</option>
+            <option value="checkbox">чекбокс</option>
+            <option value="counter">счётчик</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Оценка (мин)</span>
+          <input id="f_effort" type="number" min="1" value="25"/>
+        </label>
+      </div>
+
+      <div class="row">
+        <button id="saveTask" class="btn primary">Добавить</button>
+      </div>
+      <div id="formHint" class="muted small"></div>
+    </div>
+  </div>
+
+  <!-- Тост -->
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">API: <code id="apiBase"></code></footer>
+  <script src="app.js"></script>
+</body>
+</html>
