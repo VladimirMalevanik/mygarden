@@ -73,3 +73,33 @@ input:focus,select:focus{border-color:var(--salad-700);box-shadow:0 0 0 3px rgba
 .btn.sunlight{background:linear-gradient(180deg,var(--sun-300),var(--sun-400));border:0;color:var(--sun-900)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;background:#fff;color:#1f3113;border:1px solid var(--card-border);border-radius:12px;padding:10px 14px;max-width:92vw;box-shadow:var(--shadow);z-index:7000}
 .footer{padding:12px;text-align:center;color:#6b8a57;font-size:12px}
+
+/* Исправления для кнопок онбординга */
+.onb-slide.current .btn {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.onb-slide .btn {
+  transition: all 0.2s ease;
+}
+
+.onb-slide .btn:active {
+  transform: scale(0.98);
+}
+
+/* Гарантируем, что кнопки будут кликабельны */
+#onbStart,
+[data-next] {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Убираем возможные блокировки событий */
+.onb * {
+  pointer-events: auto;
+}
+
+.onb-backdrop {
+  pointer-events: auto;
+}

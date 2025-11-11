@@ -116,18 +116,34 @@ function openOnboarding(){
   onb.classList.remove("hidden");
   setSlide(1);
 
-  $("onbStart").addEventListener("click",(e)=>{e.preventDefault();e.stopPropagation();setSlide(2);},{passive:false});
-  onb.querySelectorAll("[data-next]").forEach(btn=>{
-    btn.addEventListener("click",(e)=>{e.preventDefault();e.stopPropagation();const cur=Number(btn.closest(".onb-slide").dataset.step);setSlide(cur+1);});
+  // Исправленные обработчики для кнопки "Начать"
+  $("onbStart").onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSlide(2);
+  };
+
+  // Обработчики для остальных кнопок "Далее"
+  onb.querySelectorAll("[data-next]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const cur = Number(btn.closest(".onb-slide").dataset.step);
+      setSlide(cur + 1);
+    };
   });
-  $("onbFinish").onclick = async (e)=>{
-    e.preventDefault(); e.stopPropagation();
+
+  // Обработчик для кнопки завершения
+  $("onbFinish").onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     localStorage.setItem("mg_onb_v1","1");
     onbBackdrop.classList.add("hidden");
     onb.classList.add("hidden");
     scene.classList.remove("blurred");
     document.body.classList.remove("onboarding");
-    await handshake(); if(!authed) await refreshToday();
+    await handshake();
+    if(!authed) await refreshToday();
   };
 }
 
@@ -153,6 +169,12 @@ grandpa.onclick=()=>{ if (localStorage.getItem("mg_intro_v1")==="1") toastMsg("�
 // init
 (function(){
   if(window.Telegram?.WebApp) setStatus("tma");
-  if(!HAS_ONBOARDING){ openOnboarding(); }
-  else { handshake().then(()=>{ if(!authed) refreshToday(); if(!HAS_INTRO && authed) runGrandpaIntro(); }); }
+  if(!HAS_ONBOARDING){ 
+    openOnboarding(); 
+  } else { 
+    handshake().then(()=>{ 
+      if(!authed) refreshToday(); 
+      if(!HAS_INTRO && authed) runGrandpaIntro(); 
+    }); 
+  }
 })();
