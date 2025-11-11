@@ -1,77 +1,128 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MyGarden • Mini App</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- Telegram Mini Apps SDK (для реального запуска внутри Telegram) -->
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>MyGarden • Мой Сад</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"/>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body>
+<body class="theme-salad">
   <header class="topbar">
-    <div class="brand">🌱 MyGarden</div>
-    <div id="status" class="status">offline</div>
+    <div class="brand">MyGarden</div>
+    <div id="status" class="status">web</div>
   </header>
 
-  <main class="container">
-    <section id="auth" class="card">
-      <h2>Онбординг</h2>
-      <p>Нажми, чтобы войти через Telegram (TMA).</p>
-      <button id="btnHandshake" class="btn primary">Войти (handshake)</button>
-      <p class="muted">Не в Telegram? Нажми «мок-вход» — для локальной проверки.</p>
-      <button id="btnMock" class="btn">Мок-вход</button>
-      <div id="meBox" class="muted small"></div>
-    </section>
+  <!-- СЦЕНА -->
+  <main id="scene" class="garden-full">
+    <div id="gardenBg" class="garden-bg"></div>
 
-    <section class="grid">
-      <div class="card">
-        <h2>Задачи на сегодня</h2>
-        <div id="tasksBox" class="list"></div>
-        <div class="row">
-          <button id="btnRefreshTasks" class="btn">Обновить</button>
-        </div>
-      </div>
+    <div class="garden-layer" id="gardenLayer">
+      <img id="sproutImg" class="sprout" src="assets/sprout.png" alt="sprout"
+           onerror="this.replaceWith(document.createTextNode('🌱'))">
+      <img id="grandpa" class="grandpa" src="assets/grandpa_stand.png" alt="садовник"
+           onerror="this.replaceWith(document.createTextNode('👴'))">
 
-      <div class="card">
-        <h2>Создать шаблон</h2>
-        <div class="form">
-          <input id="tplTitle" placeholder="Заголовок (напр. Учёба: конспект)"/>
-          <input id="tplEffort" type="number" min="1" value="25" />
-          <select id="tplMode">
-            <option value="timer">timer</option>
-            <option value="checkbox">checkbox</option>
-            <option value="counter">counter</option>
-          </select>
-          <button id="btnCreateTpl" class="btn primary">Создать</button>
-        </div>
-        <div id="tplMsg" class="muted small"></div>
+      <div id="bubble" class="bubble hidden">
+        <div id="bubbleText"></div>
+        <div class="bubble-tail"></div>
       </div>
+      <button id="bubbleNext" class="bubble-next hidden" aria-label="Следующая фраза"></button>
+    </div>
 
-      <div class="card">
-        <h2>Сад</h2>
-        <div id="gardenBox" class="list"></div>
-        <div class="row">
-          <input id="slotIndex" type="number" min="0" value="0"/>
-          <input id="speciesId" type="number" min="1" value="1"/>
-          <button id="btnPlant" class="btn">Посадить</button>
-          <button id="btnWater" class="btn">Полить</button>
-          <button id="btnGardenRefresh" class="btn">Обновить</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Сводка</h2>
-        <button id="btnSummary" class="btn">Показать сводку</button>
-        <pre id="summaryBox" class="pre"></pre>
-      </div>
-    </section>
+    <aside class="today-widget card" id="todayWidget" aria-live="polite">
+      <div class="tw-head">Сегодня осталось</div>
+      <div id="twList" class="tw-list"></div>
+      <button id="twBigPlus" class="tw-big-plus" title="Добавить задачу">+</button>
+    </aside>
   </main>
 
-  <footer class="footer">
-    <span>API: <code id="apiBase"></code></span>
-  </footer>
+  <nav class="tabbar">
+    <button class="tab-btn" disabled title="Дом">🏠</button>
+    <button class="tab-btn" disabled title="Задачи">📝</button>
+    <button class="tab-btn active" title="Мой Сад">🌳</button>
+    <button class="tab-btn" disabled title="Лист">🍃</button>
+    <button class="tab-btn" disabled title="Настройки">⚙️</button>
+  </nav>
 
+  <!-- ОНБОРДИНГ -->
+  <div id="onbBackdrop" class="onb-backdrop"></div>
+  <div id="onb" class="onb" role="dialog" aria-modal="true">
+    <!-- 1 -->
+    <section class="onb-slide current" data-step="1">
+      <div class="onb-card splash">
+        <h1 class="logo">MyGarden</h1>
+        <p class="tagline">Преврати рутину в игру</p>
+        <button id="onbStart" class="btn sunlight" data-next>Начать</button>
+      </div>
+    </section>
+    <!-- 2 -->
+    <section class="onb-slide" data-step="2">
+      <div class="onb-card">
+        <h2>Цель вашей жизни</h2>
+        <label class="field">
+          <input id="lifeGoal" placeholder="напишите первое, что пришло вам в голову"/>
+        </label>
+        <button class="btn sunlight" data-next>ОК</button>
+      </div>
+    </section>
+    <!-- 3 -->
+    <section class="onb-slide" data-step="3">
+      <div class="onb-card">
+        <h2>Чего бы вы хотели достичь за этот год</h2>
+        <label class="field"><input id="y1" placeholder="1."/></label>
+        <label class="field"><input id="y2" placeholder="2."/></label>
+        <label class="field"><input id="y3" placeholder="3."/></label>
+        <button class="btn sunlight" data-next>ОК</button>
+      </div>
+    </section>
+    <!-- 4 -->
+    <section class="onb-slide" data-step="4">
+      <div class="onb-card congrats">
+        <h2>Поздравляем!</h2>
+        <p>Вы сделали первый шаг на пути к достижению — начать. Вы заслужили подарок!</p>
+        <div class="gift">🎁</div>
+        <button class="btn sunlight" id="onbFinish">Продолжить</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- МОДАЛКА ЗАДАЧИ -->
+  <div id="modalBackdrop" class="backdrop hidden"></div>
+  <div id="taskModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>Новая задача</div>
+      <button id="closeModal" class="icon-btn" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field"><span>Что бы вы хотели сделать?</span><input id="f_title" placeholder="Например: выучить 20 слов"/></label>
+      <div class="row">
+        <label class="field"><span>Приоритет</span>
+          <select id="f_priority"><option value="low">низкий</option><option value="medium" selected>средний</option><option value="high">высокий</option></select>
+        </label>
+        <label class="field"><span>Проект</span><input id="f_project" placeholder="Учёба / Спорт / Дом"/></label>
+      </div>
+      <div class="row">
+        <label class="field"><span>Дата</span><input id="f_date" type="date"/></label>
+        <label class="field"><span>Время</span><input id="f_time" type="time"/></label>
+      </div>
+      <div class="row">
+        <label class="field"><span>Режим</span>
+          <select id="f_mode"><option value="timer" selected>таймер</option><option value="checkbox">чекбокс</option><option value="counter">счётчик</option></select>
+        </label>
+        <label class="field"><span>Оценка (мин)</span><input id="f_effort" type="number" min="1" value="25"/></label>
+      </div>
+      <div class="row"><button id="saveTask" class="btn forest">Добавить</button></div>
+      <div id="formHint" class="muted small"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="footer">API: <code id="apiBase"></code></footer>
   <script src="app.js"></script>
 </body>
 </html>

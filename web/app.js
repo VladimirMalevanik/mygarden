@@ -1,148 +1,156 @@
-// === минималистичный фронт ===
-// Как определить адрес API:
-// 1) через query ?api=https://api.example.com
-// 2) через переменную ниже BACKEND_FALLBACK
-
+// API
 const q = new URLSearchParams(location.search);
-const BACKEND_FALLBACK = "http://127.0.0.1:8000";
-const API = (q.get("api") || BACKEND_FALLBACK).replace(/\/+$/,"");
-document.getElementById("apiBase").textContent = API;
+const API = (q.get("api") || "http://127.0.0.1:8000").replace(/\/+$/,"");
+document.getElementById("apiBase")?.append(document.createTextNode(API));
 
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
+const scene = $("scene");
 const statusEl = $("status");
-const meBox = $("meBox");
+const gardenBg = $("gardenBg");
+const toast = $("toast");
 let authed = false;
+let templatesMap = new Map();
 
-function setStatus(s) { statusEl.textContent = s; }
+const bubble = $("bubble"), bubbleText = $("bubbleText"), bubbleNext = $("bubbleNext"), grandpa = $("grandpa");
+const grandpaLines = [
+  "Это Ваше первое растение!",
+  "Выполняйте ежедневные задачи, чтобы вырастить его.",
+  "Ваша дисциплина создаст красивый сад!",
+  "Что-то я устал, пойду вздремну..."
+];
+let lineIdx = 0;
 
-async function postForm(url, formObj) {
-  const fd = new FormData();
-  for (const [k,v] of Object.entries(formObj)) fd.append(k, v);
-  const r = await fetch(url, { method: "POST", body: fd });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-async function get(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-async function postJSON(url, data) {
-  const r = await fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data || {}) });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
+function setStatus(s){ statusEl.textContent = s; }
+function show(el){ el.classList.remove("hidden"); }
+function hide(el){ el.classList.add("hidden"); }
+function toastMsg(msg, ms=2200){ toast.textContent=msg; show(toast); setTimeout(()=>hide(toast),ms); }
+async function getJSON(url){ const r=await fetch(url); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
+async function postJSON(url, body){ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
+async function postForm(url, obj){ const fd=new FormData(); for(const[k,v] of Object.entries(obj)) fd.append(k,v); const r=await fetch(url,{method:"POST",body:fd}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 
-// --- Handshake ---
-async function doHandshake(initData) {
-  const res = await postForm(`${API}/api/v1/tma/handshake`, { init_data: initData });
-  authed = true;
-  meBox.textContent = `streak:${res.streak} tz:${res.user.tz} coins:${res.user.coins}`;
-  setStatus("online");
-}
-
-$("btnHandshake").onclick = async () => {
-  try {
-    // внутри Telegram Mini App initData доступен вот так:
-    const tg = window.Telegram?.WebApp;
-    const initData = tg?.initData || "";
-    if (!initData) { alert("Запусти внутри Telegram или используй «мок-вход»."); return; }
-    await doHandshake(initData);
-  } catch (e) { alert("Handshake failed: "+e.message); }
-};
-
-$("btnMock").onclick = async () => {
-  try {
-    // мок-иницилизация: генерим initData на бэке не получится, поэтому используем «пустую» ручку:
-    // у нас проверка хэша настоящая, так что мок тут просто отключит кнопку.
-    alert("В реальном режиме нужен initData от Telegram (запусти страницу как Mini App). Для локалки можно временно ослабить проверку на бэке в validate_tma_init_data().");
-  } catch (e) { alert(e.message); }
-};
-
-// --- Tasks ---
-async function refreshTasks() {
-  if (!authed) return alert("Сначала handshake");
-  const items = await get(`${API}/api/v1/tasks/instances`);
-  const box = $("tasksBox");
-  box.innerHTML = "";
-  items.forEach(it => {
-    const el = document.createElement("div");
-    el.className = "item";
-    el.innerHTML = `
-      <div>
-        <div>#${it.id} • ${it.status}</div>
-        <div class="badge">weight ${it.weight_cost} • tmpl ${it.template_id}</div>
-      </div>
-      <div class="row">
-        <button class="btn" data-act="start">start</button>
-        <button class="btn primary" data-act="complete">complete</button>
-      </div>`;
-    el.querySelector('[data-act="start"]').onclick = async () => {
-      await postJSON(`${API}/api/v1/tasks/instances/${it.id}/start`, {});
-      await refreshTasks();
-    };
-    el.querySelector('[data-act="complete"]').onclick = async () => {
-      const focus = Number(prompt("focus_minutes?", "25")) || 0;
-      const res = await postJSON(`${API}/api/v1/tasks/instances/${it.id}/complete`, { focus_minutes: focus });
-      alert(`+XP ${res.xp_awarded} | progress ${res.progress_after}`);
-      await refreshTasks();
-    };
-    box.appendChild(el);
-  });
-}
-$("btnRefreshTasks").onclick = refreshTasks;
-
-$("btnCreateTpl").onclick = async () => {
-  if (!authed) return alert("Сначала handshake");
-  const title = $("tplTitle").value.trim();
-  const effort = Number($("tplEffort").value);
-  const mode = $("tplMode").value;
-  if (!title) return;
-  const payload = { title, category:"general", difficulty:2, effort_min_est:effort, mode, repeat_rule:"DAILY", planned_windows:"08:00-22:00" };
-  const res = await postJSON(`${API}/api/v1/tasks/templates`, payload);
-  $("tplMsg").textContent = `Создан шаблон #${res.id}`;
-  await refreshTasks();
-};
-
-// --- Garden ---
-async function refreshGarden() {
-  if (!authed) return alert("Сначала handshake");
-  const g = await get(`${API}/api/v1/garden`);
-  const box = $("gardenBox");
-  box.innerHTML = `<div class="muted">slots:${g.slots} moisture:${g.moisture} cleanliness:${g.cleanliness}</div>`;
-  g.plants.forEach(p => {
-    const el = document.createElement("div");
-    el.className = "item";
-    el.innerHTML = `<div>slot ${p.slot_index} • species ${p.species_id}</div><div class="badge">stage ${p.stage}, hp ${p.health}</div>`;
-    box.appendChild(el);
-  });
-}
-$("btnGardenRefresh").onclick = refreshGarden;
-
-$("btnPlant").onclick = async () => {
-  const slotIndex = Number($("slotIndex").value);
-  const speciesId = Number($("speciesId").value);
-  await postJSON(`${API}/api/v1/garden/plant`, { slot_index: slotIndex, species_id: speciesId });
-  await refreshGarden();
-};
-
-$("btnWater").onclick = async () => {
-  await postJSON(`${API}/api/v1/garden/water`, {});
-  await refreshGarden();
-};
-
-// --- Summary ---
-$("btnSummary").onclick = async () => {
-  if (!authed) return alert("Сначала handshake");
-  const s = await get(`${API}/api/v1/daily/summary`);
-  $("summaryBox").textContent = JSON.stringify(s, null, 2);
-};
-
-// --- автоподстройка темы под Telegram ---
-(function initTheme() {
+// TMA
+async function handshake(){
   const tg = window.Telegram?.WebApp;
-  if (!tg) return;
-  document.body.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg');
-  tg.ready();
-  setStatus("tma");
+  const initData = tg?.initData || "";
+  if (!initData){ setStatus("web"); return; }
+  try{ await postForm(`${API}/api/v1/tma/handshake`, { init_data:initData }); authed=true; setStatus("online"); await warmup(); }
+  catch{ setStatus("tma-error"); }
+}
+async function warmup(){ await ensureSeed(); await loadTemplates(); await refreshToday(); }
+async function ensureSeed(){
+  const g = await getJSON(`${API}/api/v1/garden`);
+  if (!g.plants || !g.plants.length){ try{ await postJSON(`${API}/api/v1/garden/plant`, { species_id:1, slot_index:0 }); }catch{} }
+}
+async function loadTemplates(){ templatesMap.clear(); (await getJSON(`${API}/api/v1/tasks/templates`)).forEach(t=>templatesMap.set(t.id,t.title)); }
+
+// today widget
+async function refreshToday(){
+  const box = $("twList"), plus = $("twBigPlus");
+  box.innerHTML=""; if(!authed){ show(plus); return; }
+  const items = await getJSON(`${API}/api/v1/tasks/instances`);
+  if(!items.length){ show(plus); return; }
+  hide(plus);
+  items.slice(0,3).forEach(it=>{
+    const el=document.createElement("div");
+    el.className="tw-item";
+    const title = templatesMap.get(it.template_id) || ("Задача #"+it.template_id);
+    el.innerHTML=`<div><div class="tw-title">${title}</div><div class="tw-meta">вес ${it.weight_cost} • статус ${it.status}</div></div><button class="tw-chip">сделано</button>`;
+    el.querySelector(".tw-chip").onclick=async()=>{
+      try{ await postJSON(`${API}/api/v1/tasks/instances/${it.id}/start`,{});
+           const res=await postJSON(`${API}/api/v1/tasks/instances/${it.id}/complete`,{focus_minutes:20});
+           toastMsg(`+XP ${res.xp_awarded} • прогресс ${res.progress_after}`); await refreshToday(); }
+      catch{ toastMsg("Ошибка"); }
+    };
+    box.appendChild(el);
+  });
+}
+
+// modal task
+const backdrop = $("modalBackdrop"), modal = $("taskModal");
+$("twBigPlus").onclick=()=>{ show(backdrop); show(modal); };
+$("closeModal").onclick=()=>{ hide(modal); hide(backdrop); };
+$("saveTask").onclick=async()=>{
+  const title = $("f_title").value.trim(); if(!title){ $("formHint").textContent="Название обязательно"; return; }
+  const priority = $("f_priority").value;
+  const effort = Math.max(1, +$("f_effort").value || 25);
+  const project = $("f_project").value.trim();
+  const mode = $("f_mode").value;
+  const date = $("f_date").value, time = $("f_time").value;
+  const planned_windows = (date && time)?`${time}-${time}`:"08:00-22:00";
+  const difficulty = priority==="high"?4:priority==="medium"?3:2;
+  const category = project?`${project}:${priority}`:`inbox:${priority}`;
+  try{
+    await postJSON(`${API}/api/v1/tasks/templates`, { title, category, difficulty, effort_min_est:effort, mode, repeat_rule:"DAILY", planned_windows });
+    $("formHint").textContent="Создано!"; hide(modal); hide(backdrop); await loadTemplates(); await refreshToday();
+  }catch{ $("formHint").textContent="Ошибка сохранения"; }
+};
+
+// onboarding
+const onb = $("onb"), onbBackdrop = $("onbBackdrop");
+const slides = [...onb.querySelectorAll(".onb-slide")];
+function setSlide(step){ slides.forEach(s=>s.classList.toggle("current", Number(s.dataset.step)===step)); }
+function openOnboarding(){
+  scene.classList.add("blurred");
+  onbBackdrop.style.display="block"; onb.style.display="grid";
+  setSlide(1);
+
+  // жёсткий обработчик на «Начать», чтобы точно сработало
+  $("onbStart").addEventListener("click",(e)=>{ e.preventDefault(); e.stopPropagation(); setSlide(2); },{once:false});
+
+  // запасной обработчик для всех кнопок с data-next
+  onb.querySelectorAll("[data-next]").forEach(btn=>{
+    btn.addEventListener("click",(e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const cur=Number(btn.closest(".onb-slide").dataset.step);
+      setSlide(cur+1);
+    });
+  });
+
+  // submit/Enter → следующий шаг
+  onb.addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"){
+      e.preventDefault();
+      const cur = Number(onb.querySelector(".onb-slide.current")?.dataset.step||1);
+      if(cur<4) setSlide(cur+1);
+    }
+  });
+
+  $("onbFinish").onclick = async (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    fireConfetti();
+    const lifeGoal = $("lifeGoal").value.trim();
+    const goals=[ $("y1").value.trim(), $("y2").value.trim(), $("y3").value.trim() ].filter(Boolean);
+    localStorage.setItem("mg_onb_v1", JSON.stringify({lifeGoal,goals,ts:Date.now()}));
+    onbBackdrop.style.display="none"; onb.style.display="none"; scene.classList.remove("blurred");
+    runGrandpaIntro();
+    await handshake(); if(authed) await warmup();
+  };
+}
+function fireConfetti(){ console.log("confetti!"); }
+
+// дед: фразы + финал (сон)
+function runGrandpaIntro(){
+  lineIdx=0; bubbleText.textContent = grandpaLines[lineIdx];
+  gardenBg.classList.remove("sleep");
+  grandpa.src="assets/grandpa_stand.png";
+  show(bubble); show(bubbleNext);
+}
+bubbleNext.onclick=()=>{
+  lineIdx++;
+  if(lineIdx<grandpaLines.length){
+    bubbleText.textContent=grandpaLines[lineIdx];
+    if(lineIdx===1) grandpa.src="assets/grandpa_stand2.png";
+    if(lineIdx===2) grandpa.src="assets/grandpa_stand3.png";
+    if(lineIdx===3){ gardenBg.classList.add("sleep"); } // фон с дедушкой в кресле и розой
+  }else{
+    hide(bubble); hide(bubbleNext);
+  }
+};
+grandpa.onclick=()=>{ if(gardenBg.classList.contains("sleep")) toastMsg("Сейчас садовник Витя отдыхает, не доёбывайте его...",2600); };
+
+// init
+(function(){
+  if(window.Telegram?.WebApp) setStatus("tma");
+  if(!localStorage.getItem("mg_onb_v1")) openOnboarding();
+  else { handshake().then(()=>{ if(authed) warmup(); }); }
 })();
